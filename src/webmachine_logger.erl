@@ -105,7 +105,8 @@ format_req(#wm_log_data{method=Method,
                         version=Version,
                         response_code=ResponseCode,
                         response_length=ResponseLength}) ->
-    User = "-",
+    Host = mochiweb_headers:get_value("Host", Headers),
+    User = fe_util:get_username_from_cookie(mochiweb_headers:get_value("Cookie", Headers)),
     Time = fmtnow(),
     Status = integer_to_list(ResponseCode),
     Length = integer_to_list(ResponseLength),
@@ -119,7 +120,7 @@ format_req(#wm_log_data{method=Method,
             undefined -> "";
             U -> U
         end,
-    fmt_alog(Time, Peer, User, fmt_method(Method), Path, Version,
+    fmt_alog(Time, Host, Peer, User, fmt_method(Method), Path, Version,
              Status, Length, Referer, UserAgent).
 
 fmt_method(M) when is_atom(M) -> atom_to_list(M).
@@ -167,9 +168,9 @@ suffix({Y, M, D, H}) ->
     HS = zeropad(H, 2),
     lists:flatten([$., YS, $_, MS, $_, DS, $_, HS]).
 
-fmt_alog(Time, Ip, User, Method, Path, {VM,Vm},
+fmt_alog(Time, Host, Ip, User, Method, Path, {VM,Vm},
          Status,  Length, Referrer, UserAgent) ->
-    [fmt_ip(Ip), " - ", User, [$\s], Time, [$\s, $"], Method, " ", Path,
+    [fmt_ip(Ip), [$\s], Host, [$\s], User, [$\s], Time, [$\s, $"], Method, " ", Path,
      " HTTP/", integer_to_list(VM), ".", integer_to_list(Vm), [$",$\s],
      Status, [$\s], Length, [$\s,$"], Referrer,
      [$",$\s,$"], UserAgent, [$",$\n]].
